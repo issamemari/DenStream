@@ -6,14 +6,15 @@ class WeightedIncrementalStandardDeviation:
     def __init__(self):
 
         self.decay_factor = 1
-        self.mean = 0
-        self.variance_acc = 0
+        self.mean = None
+        self.variance_acc = None
         self.sum_of_weights = 0
 
     def update(self, sample, weight):
 
-        print(
-            f"Current std is {self.std()}. Current mean is {self.mean}. Updating std with new sample {sample} with weight {weight}.")
+        #print(
+            #f"Current std is {self.std()}. Current mean is {self.mean}. Updating std with new sample {sample} with weight {weight}.")
+        
         if self.sum_of_weights != 0:
 
             # Update sum of weights
@@ -47,10 +48,20 @@ class WeightedIncrementalStandardDeviation:
             return float('nan')
 
 std = WeightedIncrementalStandardDeviation()
-for i in range(100):
-    std.update(i, 1)
+for i in range(10):
+    std.update(np.array([i, i * i]), i)
 
 print(std.std())
 print(std.mean)
 
-print(list(range(100)))
+l = []
+for i in range(10):
+    for j in range(i):
+        l.append([i, i * i])
+
+std = WeightedIncrementalStandardDeviation()
+for i in range(len(l)):
+    std.update(np.array(l[i]), 1)
+
+print(std.std())
+print(std.mean)
