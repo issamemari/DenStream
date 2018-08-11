@@ -49,18 +49,17 @@ class MicroClusterBad:
         self.sum_of_weights = 0
 
     def insert_sample(self, sample, weight):
-        if self.sum_of_weights != 0:
-            # Update sum of weights
-            self.sum_of_weights = self.sum_of_weights * self.decay_factor + weight
+        # Update sum of weights
+        self.sum_of_weights = self.sum_of_weights * self.decay_factor + weight
 
-            # Update linear sum
-            self.linear_sum += weight * sample
+        # Update linear sum
+        self.linear_sum *= self.decay_factor
+        self.linear_sum += weight * sample
 
-            # Update squared sum
-            self.squared_sum += weight * sample ** 2
-        else:
-            self.mean = sample
-            self.sum_of_weights = weight
+        # Update squared sum
+        self.squared_sum *= self.decay_factor
+        self.squared_sum += weight * sample ** 2
+
 
     def radius(self):
         if self.sum_of_weights > 0:
@@ -71,23 +70,27 @@ class MicroClusterBad:
             return float('nan')
 
     def center(self):
-        return self.mean
+        return self.linear_sum / self.sum_of_weights
 
-mc1 = MicroCluster(0)
-mc2 = MicroClusterBad(0)
+mc1 = MicroCluster(1)
+mc2 = MicroClusterBad(1)
 
 # The bad micro cluster works fine for small numbers
-for i in range(0, 10):
-    mc1.insert_sample(np.array([i, i]), 1)
-    mc2.insert_sample(np.array([i, i]), 1)
-    print(f"Micro-Cluster 1 radius is {mc1.radius()}")
-    print(f"Micro-Cluster 2 radius is {mc2.radius()}")
+for i in range(0, 100):
+    mc1.insert_sample(np.array([i, i]), i)
+    mc2.insert_sample(np.array([i, i]), i)
+    print(f"Good MicroCluster radius is {mc1.radius()}")
+    print(f"Good MicroCluster center is {mc1.center()}")
+    print(f"Bad MicroCluster radius is {mc2.radius()}")
+    print(f"Bad MicroCluster center is {mc2.center()}")
     print("")
 
 # However, it fails for large numbers
-for i in range(10000000000, 10000000010):
-    mc1.insert_sample(np.array([i, i]), 1)
-    mc2.insert_sample(np.array([i, i]), 1)
-    print(f"Micro-Cluster 1 radius is {mc1.radius()}")
-    print(f"Micro-Cluster 2 radius is {mc2.radius()}")
+for i in range(10000000000, 10000000100):
+    mc1.insert_sample(np.array([i, i]), i)
+    mc2.insert_sample(np.array([i, i]), i)
+    print(f"Good MicroCluster radius is {mc1.radius()}")
+    print(f"Good MicroCluster center is {mc1.center()}")
+    print(f"Bad MicroCluster radius is {mc2.radius()}")
+    print(f"Bad MicroCluster center is {mc2.center()}")
     print("")
