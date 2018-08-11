@@ -1,36 +1,42 @@
 import numpy as np
 
-class MicroCluster():
 
-    def __init__(self, lamb):
+class MicroCluster:
+    def __init__(self, lambd):
+        self.decay_factor = 2 ** (-lambd)
+        self.mean = 0
+        self.variance = 0
+        self.sum_of_weights = 0
 
-        self.lamb = lamb
-        self.weight = 0
-        self.instance_count = 0
-        self.reduction_factor = 2 ** (-lamb)
+    def insert_sample(self, sample, weight):
+        if self.sum_of_weights != 0:
+            # Update sum of weights
+            old_sum_of_weights = self.sum_of_weights
+            new_sum_of_weights = old_sum_of_weights * self.decay_factor + weight
 
-    def insert_sample(self, sample):
+            # Update mean
+            old_mean = self.mean
+            new_mean = old_mean + \
+                (weight / new_sum_of_weights) * (sample - old_mean)
 
-        if self.instance_count == 0:
-            self.dimensions = sample.size
-            self.weighted_linear_sum = np.zeros(self.dimensions)
-            self.weighted_squared_sum = np.zeros(self.dimensions)
-            self.center = np.zeros(self.dimensions)
-            self.radius = 0
+            # Update variance
+            old_variance = self.variance
+            new_variance = old_variance * ((new_sum_of_weights - weight)
+                                           / old_sum_of_weights) \
+                + weight * (sample - new_mean) * (sample - old_mean)
 
-        # Update weight
-        self.weight *= self.reduction_factor
-        self.weight += 1
+            self.mean = new_mean
+            self.variance = new_variance
+            self.sum_of_weights = new_sum_of_weights
+        else:
+            self.mean = sample
+            self.sum_of_weights = weight
 
-        # Update the weighted linear sum of instances
-        self.weighted_linear_sum *= self.reduction_factor
-        self.weighted_linear_sum += sample
+    def radius(self):
+        if self.sum_of_weights > 0:
+            return np.linalg.norm(np.sqrt(self.variance / self.sum_of_weights))
+        else:
+            return float('nan')
 
-        # Update the weighted squared sum of instances
-        self.weighted_squared_sum *= self.reduction_factor
-        self.weighted_squared_sum += sample ** 2
-
-        # Update micro-cluster center
-        self.center = self.weighted_linear_sum / self.weight
-
-        # Update micro-cluster radius
+    def center(self):
+        return self.mean
