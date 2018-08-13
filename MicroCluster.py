@@ -3,6 +3,7 @@ import numpy as np
 
 class MicroCluster:
     def __init__(self, lambd):
+        self.lambd = lambd
         self.decay_factor = 2 ** (-lambd)
         self.mean = 0
         self.variance = 0
@@ -40,3 +41,13 @@ class MicroCluster:
 
     def center(self):
         return self.mean
+
+    def weight(self):
+        return self.sum_of_weights
+
+    def __copy__(self):
+        new_micro_cluster = MicroCluster(self.lambd)
+        new_micro_cluster.sum_of_weights = self.sum_of_weights
+        new_micro_cluster.variance = self.variance
+        new_micro_cluster.mean = self.mean
+        return new_micro_cluster
