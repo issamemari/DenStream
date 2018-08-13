@@ -3,10 +3,12 @@ import numpy as np
 from sklearn.utils import check_array
 from copy import copy
 from MicroCluster import MicroCluster
+from math import ceil
+
 
 class DenStream:
 
-    def __init__(self, lambd=0, eps=1, beta=1, mu=1):
+    def __init__(self, lambd=1, eps=1, beta=2, mu=2):
         """
         DenStream - Density-Based Clustering over an Evolving Data Stream with
         Noise.
@@ -39,6 +41,8 @@ class DenStream:
         self.eps = eps
         self.beta = beta
         self.mu = mu
+        self.t = 0
+        self.tp = ceil((1 / lambd) * np.log((beta * mu) / (beta * mu - 1)))
         self.p_micro_clusters = []
         self.o_micro_clusters = []
 
@@ -98,7 +102,7 @@ class DenStream:
                 return True
         return False
 
-    def _partial_fit(self, sample, weight):
+    def _merging(self, sample, weight):
         # Try to merge the sample with its nearest p_micro_cluster
         _, nearest_p_micro_cluster = \
             self._get_nearest_micro_cluster(sample, self.p_micro_clusters)
@@ -114,9 +118,28 @@ class DenStream:
                     self.p_micro_clusters.append(nearest_o_micro_cluster)
             else:
                 # Create new o_micro_cluster
-                micro_cluster = MicroCluster(self.lambd)
+                micro_cluster = MicroCluster(self.lambd, self.t)
                 micro_cluster.insert_sample(sample, weight)
                 self.o_micro_clusters.append(micro_cluster)
+
+    def _decay_function(self, t):
+        return 2 ** ((-self.lambd) * (t))
+
+    def _partial_fit(self, sample, weight):
+        self._merging(sample, weight)
+        if self.t % self.tp == 0:
+            self.p_micro_clusters = [p_micro_cluster for p_micro_cluster
+                                     in self.p_micro_clusters if
+                                     p_micro_cluster.weight() >= self.beta *
+                                     self.mu]
+            Xis = [((self._decay_function(self.t - o_micro_cluster.creation_time
+                                          + self.tp) - 1) /
+                    (self._decay_function(self.tp) - 1)) for o_micro_cluster in
+                   self.o_micro_clusters]
+            self.o_micro_clusters = [o_micro_cluster for Xi, o_micro_cluster in
+                                     zip(Xis, self.o_micro_clusters) if
+                                     o_micro_cluster.weight() < Xi]
+        self.t += 1
 
     def _validate_sample_weight(self, sample_weight, n_samples):
         """Set the sample weight array."""
@@ -130,3 +153,9 @@ class DenStream:
         if sample_weight.shape[0] != n_samples:
             raise ValueError("Shapes of X and sample_weight do not match.")
         return sample_weight
+
+
+data = np.random.random([1000, 5])
+clusterer = DenStream()
+for row in data:
+    clusterer.partial_fit([row], 1)

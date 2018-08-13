@@ -2,12 +2,13 @@ import numpy as np
 
 
 class MicroCluster:
-    def __init__(self, lambd):
+    def __init__(self, lambd, creation_time):
         self.lambd = lambd
         self.decay_factor = 2 ** (-lambd)
         self.mean = 0
         self.variance = 0
         self.sum_of_weights = 0
+        self.creation_time = creation_time
 
     def insert_sample(self, sample, weight):
         if self.sum_of_weights != 0:
