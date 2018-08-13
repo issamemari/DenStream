@@ -4,6 +4,7 @@ from sklearn.utils import check_array
 from copy import copy
 from MicroCluster import MicroCluster
 from math import ceil
+from sklearn.cluster import DBSCAN
 
 
 class DenStream:
@@ -42,9 +43,12 @@ class DenStream:
         self.beta = beta
         self.mu = mu
         self.t = 0
-        self.tp = ceil((1 / lambd) * np.log((beta * mu) / (beta * mu - 1)))
         self.p_micro_clusters = []
         self.o_micro_clusters = []
+        if lambd > 0:
+            self.tp = ceil((1 / lambd) * np.log((beta * mu) / (beta * mu - 1)))
+        else:
+            self.tp = sys.maxsize
 
     def partial_fit(self, X, y=None, sample_weight=None):
         """
@@ -80,6 +84,58 @@ class DenStream:
 
         for sample, weight in zip(X, sample_weight):
             self._partial_fit(sample, weight)
+        return self
+
+    def fit_predict(self, X, y=None, sample_weight=None):
+        """
+        Lorem ipsum dolor sit amet
+
+        Parameters
+        ----------
+        X : {array-like, sparse matrix}, shape (n_samples, n_features)
+            Subset of training data
+
+        y : Ignored
+
+        sample_weight : array-like, shape (n_samples,), optional
+            Weights applied to individual samples.
+            If not provided, uniform weights are assumed.
+
+        Returns
+        -------
+        y : ndarray, shape (n_samples,)
+            Cluster labels
+        """
+
+        X = check_array(X, dtype=np.float64, order="C")
+
+        n_samples, _ = X.shape
+
+        sample_weight = self._validate_sample_weight(sample_weight, n_samples)
+
+        # if not hasattr(self, "potential_micro_clusters"):
+
+        # if n_features != :
+        # raise ValueError("Number of features %d does not match previous "
+        # "data %d." % (n_features, self.coef_.shape[-1]))
+
+        for sample, weight in zip(X, sample_weight):
+            self._partial_fit(sample, weight)
+        p_micro_cluster_centers = [p_micro_cluster.center() for p_micro_cluster in
+                                   self.p_micro_clusters]
+        p_micro_cluster_weights = [p_micro_cluster.weight() for p_micro_cluster in
+                                   self.p_micro_clusters]
+        dbscan = DBSCAN(eps=8, algorithm='brute')
+        dbscan.fit(p_micro_cluster_centers,
+                   sample_weight=p_micro_cluster_weights)
+
+        y = []
+        for sample in X:
+            index, _ = self._get_nearest_micro_cluster(sample,
+                                                       self.p_micro_clusters)
+            y.append(dbscan.labels_[index])
+
+        return y
 
     def _get_nearest_micro_cluster(self, sample, micro_clusters):
         smallest_distance = sys.float_info.max
@@ -138,7 +194,7 @@ class DenStream:
                    self.o_micro_clusters]
             self.o_micro_clusters = [o_micro_cluster for Xi, o_micro_cluster in
                                      zip(Xis, self.o_micro_clusters) if
-                                     o_micro_cluster.weight() < Xi]
+                                     o_micro_cluster.weight() >= Xi]
         self.t += 1
 
     def _validate_sample_weight(self, sample_weight, n_samples):
@@ -155,7 +211,9 @@ class DenStream:
         return sample_weight
 
 
-data = np.random.random([1000, 5])
-clusterer = DenStream()
+data = np.random.random([1000, 5]) * 1000
+clusterer = DenStream(lambd=0.1, eps=100, beta=0.5, mu=3)
 for row in data:
     clusterer.partial_fit([row], 1)
+    print(f"Number of p_micro_clusters is {len(clusterer.p_micro_clusters)}")
+    print(f"Number of o_micro_clusters is {len(clusterer.o_micro_clusters)}")

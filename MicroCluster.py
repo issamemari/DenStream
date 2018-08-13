@@ -47,7 +47,7 @@ class MicroCluster:
         return self.sum_of_weights
 
     def __copy__(self):
-        new_micro_cluster = MicroCluster(self.lambd)
+        new_micro_cluster = MicroCluster(self.lambd, self.creation_time)
         new_micro_cluster.sum_of_weights = self.sum_of_weights
         new_micro_cluster.variance = self.variance
         new_micro_cluster.mean = self.mean
