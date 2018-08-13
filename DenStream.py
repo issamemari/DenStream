@@ -70,7 +70,7 @@ class DenStream:
         self : returns an instance of self.
         """
 
-        X = check_array(X, dtype=np.float64, order="C")
+        #X = check_array(X, dtype=np.float64, order="C")
 
         n_samples, _ = X.shape
 
@@ -107,7 +107,7 @@ class DenStream:
             Cluster labels
         """
 
-        X = check_array(X, dtype=np.float64, order="C")
+        #X = check_array(X, dtype=np.float64, order="C")
 
         n_samples, _ = X.shape
 
@@ -121,11 +121,13 @@ class DenStream:
 
         for sample, weight in zip(X, sample_weight):
             self._partial_fit(sample, weight)
-        p_micro_cluster_centers = [p_micro_cluster.center() for p_micro_cluster in
-                                   self.p_micro_clusters]
+        
+        p_micro_cluster_centers = np.array([p_micro_cluster.center() for
+                                            p_micro_cluster in
+                                            self.p_micro_clusters])
         p_micro_cluster_weights = [p_micro_cluster.weight() for p_micro_cluster in
                                    self.p_micro_clusters]
-        dbscan = DBSCAN(eps=8, algorithm='brute')
+        dbscan = DBSCAN(eps=0.3, algorithm='brute')
         dbscan.fit(p_micro_cluster_centers,
                    sample_weight=p_micro_cluster_weights)
 
@@ -211,9 +213,9 @@ class DenStream:
         return sample_weight
 
 
-data = np.random.random([1000, 5]) * 1000
-clusterer = DenStream(lambd=0.1, eps=100, beta=0.5, mu=3)
-for row in data:
-    clusterer.partial_fit([row], 1)
-    print(f"Number of p_micro_clusters is {len(clusterer.p_micro_clusters)}")
-    print(f"Number of o_micro_clusters is {len(clusterer.o_micro_clusters)}")
+#data = np.random.random([1000, 5]) * 1000
+#clusterer = DenStream(lambd=0.1, eps=100, beta=0.5, mu=3)
+# for row in data:
+    #clusterer.partial_fit([row], 1)
+    #print(f"Number of p_micro_clusters is {len(clusterer.p_micro_clusters)}")
+    #print(f"Number of o_micro_clusters is {len(clusterer.o_micro_clusters)}")
